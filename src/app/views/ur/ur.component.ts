@@ -1,6 +1,6 @@
-import { Component, OnInit, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
-// import { Engine, Scene, UniversalCamera, FreeCamera, HemisphericLight, Vector3, MeshBuilder, Mesh, SceneLoader } from 'babylonjs';
-// import 'babylonjs-loaders';
+import { Component, Input, OnInit, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
 @Component({
   selector: 'app-ur',
@@ -55,42 +55,125 @@ export class UrComponent implements OnInit, AfterViewInit {
   phaseStr = ['Your Turn: Roll', 'Your Turn: Move', 'Bot: Roll', 'Bot: Move'];
 
   // Dice
-  dice: boolean[] = [false, false, false, false];
+  diceVal: boolean[] = [false, false, false, false];
   diceSum = 0;
 
   // Show possible moves
   // This is the index of the chip being hovered
   possMoves = 16;
 
-  /* BabylonJS (Dice)
-  canvas: HTMLCanvasElement;
-  engine: Engine;
-  scene: Scene; */
+  // THREE.js
+  camera: any;
+  scene: any;
+  renderer: any;
+  geometry: any;
+  material: any;
+  mesh: any;
+  loader: any;
 
-  /* Dice
-  public static CreateScene(engine: Engine, canvas: HTMLCanvasElement): Scene {
-    const scene = new Scene(engine);
-    // This creates a light, aiming 0,1,0 - to the sky (non-mesh)
-    const light = new HemisphericLight('light1', new Vector3(0, 1, 0), scene);
-    light.intensity = 0.7;
+  dice: THREE.Mesh[] = [];
+  diceV: any = [];
 
-    const camera = new UniversalCamera('UniversalCamera', new Vector3(0, 0, -40), scene);
-    camera.setTarget(Vector3.Zero());
-    camera.attachControl(canvas, true);
+  rollP = 0;
+  rollDuration = 1000;
 
-    // The first parameter can be used to specify which mesh to import. Here we import all meshes
-    SceneLoader.Append('./assets/', '4_sided_die.glb', scene, (newMeshes) => {
-        scene.activeCamera = null;
-        scene.createDefaultCameraOrLight(true);
-        scene.activeCamera.attachControl(canvas, false);
+  init() {
+    this.scene = new THREE.Scene();
+
+    /* Optional: Provide a DRACOLoader instance to decode compressed mesh data
+    const dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath( '/examples/js/libs/draco' );
+    this.loader.setDRACOLoader( dracoLoader ); */
+
+    // Load a glTF resource
+    this.loader = new GLTFLoader();
+    this.loader.load(
+      // resource URL
+      'assets/4_sided_die_centered.glb',
+      // called when the resource is loaded
+      (gltf) =>  {
+        for (let k = 0; k < 4; k++) {
+          this.dice[k] = gltf.scene.children[0].clone();
+          this.dice[k].position.x = k * 25 - 40;
+          this.diceV[k] = {};
+          this.diceV[k].rx = 0 + Math.random() * 10;
+          this.diceV[k].ry = 0 + Math.random() * 20;
+          this.diceV[k].rz = 0 + Math.random() * 30;
+
+          this.scene.add(this.dice[k]);
+        }
+        this.doneLoading();
+        this.resetDice();
+      },
+      // called while loading is progressing
+      (xhr) => {
+        console.log( ( xhr.loaded / xhr.total * 100 ) + '% loaded' );
+      },
+      // called when loading has errors
+      (e) => {
+        console.log('GLTF loader error', e);
+      }
+    );
+
+  }
+
+  resetDice() {
+    setTimeout(() => { this.resetDice(); }, 5000);
+  }
+
+  doneLoading() {
+
+    const w = 300;
+    const h = 140;
+
+    // Camera
+    this.camera = new THREE.PerspectiveCamera(70, w / h, 0.01, 150);
+    this.camera.position.set(0, 0, 50);
+
+    // Lighting
+    const hemiLight = new THREE.HemisphereLight( 0xffffff, 0xffffff, 0.8 );
+    hemiLight.color.setHSL( 1, 1, 1 );
+    hemiLight.groundColor.setHSL( 1, 1, 1 );
+    hemiLight.position.set( 0, 50, 0 );
+    this.scene.add(hemiLight);
+
+    const dirLight = new THREE.DirectionalLight( 0xffffff, 1 );
+    dirLight.color.setHSL( 1, 1, 1 );
+    dirLight.position.set( - 1, 1.75, 1 );
+    dirLight.position.multiplyScalar( 30 );
+    this.scene.add(dirLight);
+    this.renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      canvas: document.getElementById('diceCanvas') as HTMLCanvasElement
     });
+    this.renderer.setClearColor( 0xffffff );
+    this.renderer.gammaOutput = true;
+    this.renderer.setSize(w, h);
+    // document.body.appendChild(this.renderer.domElement);
 
-    const sphere = Mesh.CreateSphere('sphere1', 16, 2, scene);
-    sphere.position.y = 1;
-    const ground = Mesh.CreateGround('ground1', 6, 6, 2, scene);
+    // Begin animation
+    this.animate();
+  }
 
-    return scene;
-  } */
+  // Use arrow function so requestAnimationFrame retains 'this'
+  animate = () => {
+    requestAnimationFrame(this.animate);
+
+
+    const p = 1 - Math.cos(Math.max(0, (this.rollP - Date.now()) / this.rollDuration));
+
+    this.renderer.domElement.style.opacity = (1 - p * 2).toString();
+
+    for (let k = 0; k < 4; k++) {
+      this.dice[k].rotation.x = p * this.diceV[k].rx + Math.PI;
+      this.dice[k].rotation.y = p * this.diceV[k].ry;
+      this.dice[k].rotation.z = p * this.diceV[k].rz + (this.diceVal[k] ? 0 : 2.039);
+      this.dice[k].position.y = p * -70 + 20;
+      this.dice[k].position.z = p * 100;
+    }
+
+    this.renderer.render(this.scene, this.camera);
+  }
 
   constructor() {
     for (let c = 0; c < 7; c++) {
@@ -114,9 +197,7 @@ export class UrComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit() {
-    /* this.canvas = this.canvasRef.nativeElement;
-    this.engine = new Engine(this.canvas, true);
-    setTimeout(() => { this.scene = UrComponent.CreateScene(this.engine, this.canvas); }, 3000); */
+    this.init();
   }
 
   // Increment game phase
@@ -172,10 +253,15 @@ export class UrComponent implements OnInit, AfterViewInit {
 
   // Roll dice
   rollDice() {
+    // Animation
+    document.getElementById('diceSum').classList.remove('enter');
+    setTimeout(() => { document.getElementById('diceSum').classList.add('enter'); }, 200);
+    this.rollP = Date.now() + this.rollDuration;
+
     this.diceSum = 0;
     for (let k = 0; k < 4; k++) {
-      this.dice[k] = Math.random() > 0.5;
-      this.diceSum += this.dice[k] ? 1 : 0;
+      this.diceVal[k] = Math.random() > 0.5;
+      this.diceSum += this.diceVal[k] ? 1 : 0;
     }
     this.nextPhase();
     // If 0 rolled, skip move phase

@@ -58,7 +58,7 @@
                (click)="(pos[0][m] && !pos[0][m + diceSum] && moveChip(pos[0][m])) || (pos[1][m] && !pos[1][m + diceSum] && moveChip(pos[1][m]))"
                (mouseover)="positionsB[m] && possMoves = m"
                (mouseout)="positionsB[m] && possMoves = 15"
-               class="cell {{pos[0][m]?.cl}} {{pos[1][m]?.cl}} {{possMoves + diceSum == m ? 'highlight' : ''}}"
+               class="cell {{pos[0][m]?.cl}} {{pos[1][m]?.cl}} {{ (gamePhase == 1) && (possMoves + diceSum == m) ? 'highlight' : ''}}"
                [ngClass]="{'double': m == 8 }"
                [disabled]="gamePhase != 1"
                ></button>
@@ -72,7 +72,7 @@
                (click)="pos[1][b] && !pos[1][b + diceSum] && moveChip(pos[1][b])"
                (mouseover)="pos[1][b] && possMoves = b"
                (mouseout)="possMoves = 15"
-               class="cell {{pos[1][b]?.cl}} {{possMoves + diceSum == b ? 'highlight' : ''}}"
+               class="cell {{pos[1][b]?.cl}} {{ (gamePhase == 1) && (possMoves + diceSum == b) ? 'highlight' : ''}}"
                [ngClass]="{'blank': b == 0, 'double': b == 4 || b == 14}"
                [disabled]="gamePhase != 1"
                ></button>
@@ -114,20 +114,24 @@
         </div>
       </section>
     </main>
-    <aside class="col-2 d-flex justify-content-center flex-column">
-      <!-- roll button -->
-      <button
-        class="btn"
-        (click)="rollDice()"
-        [ngClass]="{'btn-primary': gamePhase == 0}"
-        [disabled]="gamePhase != 0"
-           >Roll Dice</button>
-      <!-- dice display -->
-      <div class="container" *ngFor="let d of dice">
-        <small class="text-muted">{{ d }}</small>
-      </div>
-      <!-- dice sum -->
-      <h5>Dice Sum <h1 style="font-size:96px">{{ diceSum }}</h1></h5>
-    </aside>
+    <div>
+      <aside class="die-panel d-flex justify-content-center flex-column">
+        <div class="info p-4">
+          <h1 class="mb-2">Dice</h1>
+          <div class="dropdown-divider mb-3"></div>
+          <!-- roll button -->
+          <button
+            class="btn"
+            (click)="rollDice()"
+            [ngClass]="{'btn-primary': gamePhase == 0}"
+            [disabled]="gamePhase != 0"
+               >Roll Dice</button>
+          <!-- dice sum -->
+          <h1 id="diceSum" style="font-size:96px" class="float-right">{{ diceSum }}</h1>
+        </div>
+        <!-- dice rendering -->
+        <canvas id="diceCanvas" class="align-self-bottom"></canvas>
+      </aside>
+    </div>
   </div>
 </div>
