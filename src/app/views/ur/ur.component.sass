@@ -2,7 +2,7 @@
 
 .ur
   width: 100vw
-  height: auto
+  height: 100vh
   min-height: 100vh
   overflow: hidden
   background-color: #f1f1f1
@@ -15,33 +15,28 @@
   .phase2, .phase3
     color: red
 
-.bot-info, .player-info
+/*.bot-info, .player-info
   .badge
     height: 18px
     transform: scale(2) translateX(40%) translateY(40%)
-
   .start, .finish
     padding: 1rem
     margin: 0.5rem
     background-color: rgba(0, 0, 0, 0.05)
-
     &::before
       content: 'Start'
       display: block
       margin-top: -0.5rem
-
     img
       margin: 0.2rem
       width: 3vw
       height: 3vw
       float: left
       border-radius: 2vw
-
     button.new-chip[disabled]
       visibility: hidden
-
   .finish::before
-    content: 'Finish'
+    content: 'Finish' */
 
 section.board
 
@@ -64,7 +59,7 @@ section.board
       background-position: center
       background-repeat: no-repeat
       box-shadow: 0 3px 12px #00000038
-      transition: transform 200ms ease-in-out, box-shadow 200ms ease-in-out, background-color 200ms ease-in-out, background-size 500ms ease-out
+      transition: transform 200ms ease-out, box-shadow 200ms ease-out, background-size 200ms
 
     .cell.blank
       visibility: hidden
@@ -73,23 +68,32 @@ section.board
       border-color: #f34379
 
     .cell.chipA
-      background-image: url('src/assets/red_stroke.png')
+      background-image: url('src/assets/chip_white.svg')
       cursor: pointer
-      background-size: 100%
+      background-size: 50%
 
     .cell.chipB
-      background-image: url('src/assets/green_stroke.jpeg')
+      background-image: url('src/assets/chip_black.svg')
       cursor: pointer
-      background-size: 100%
+      background-size: 50%
 
     .cell.highlight:not(.chipB)
-      background-color: #f3437911
+      background-image: url('src/assets/chip_black.svg')
+      transition: transform 200ms ease-out, box-shadow 200ms ease-out, background-size 0ms
+      background-size: 60%
       box-shadow: 0 5px 24px #00000066
       transform: scale(1.1)
 
+    .cell:focus
+      outline: none
 
-// Dice
-.die-panel
+    .cell.chipA.ghost,
+    .cell.chipB.ghost
+      transition: transform 200ms ease-out, box-shadow 200ms ease-out, background-size 0ms
+      background-size: 40%
+
+// Player info
+.player-info
   padding: 0
   border: 1px solid #ddd
   border-radius: 1rem
@@ -98,12 +102,93 @@ section.board
   background-color: #fff
   box-shadow: 0 3px 14px #ddd
 
-  h1#diceSum
-    opacity: 0
+  .badge
+    height: 18px
 
-  h1#diceSum.enter
-    transition: opacity 500ms ease-out
+  .start, .finish
+    
+    img
+      width: 24px
+      height: 24px
+
+  .start
+
+    .smChip
+      z-index: 1
+      position: relative
+      pointer-events: none
+
+    button.new-chip
+      position: absolute
+      display: block
+      margin-left: -153px
+      margin-top: -6px
+      white-space: nowrap
+      animation: scroll 300ms cubic-bezier(.05,.99,.43,.99)
+
+.player-a.player-info .start .available:last-child()
+  float: none
+
+@keyframes scroll
+  from
+    margin-left: 0px
+    max-width: 0
+    color: rgba(255,255,255,0)
+  to
+    margin-left: -153px
+    color: rgba(255,255,255,1)
+    max-width: 190px
+
+
+// Dice
+.die-panel
+  padding: 0
+  border: 1px solid #ddd
+  border-radius: 1rem
+  width: 302px
+  max-width: 302px
+  background-color: #fff
+  box-shadow: 0 3px 14px #ddd
+
+  button
+    position: absolute
+    z-index: 2
+    left: 20px
+    bottom: 20px
+
+  button:not(.btn-primary)
+    box-shadow: none
+
+  span#diceSum
+    position: absolute
+    z-index: 2
+    opacity: 0
+    bottom: 20px
+    right: 20px
+
+  span#diceSum.enter
     opacity: 1
+    transition: opacity 500ms ease-out
 
   #diceCanvas
     border-radius: 1rem
+    margin-bottom: 1px
+
+  .alert-success
+    transform: translateX(40px) translateY(-20px) rotateZ(9deg) scale(1.2)
+    animation: popin 300ms cubic-bezier(.05,1.55,.83,1.01)
+
+@keyframes popin
+  from
+    transform: translateX(40px) translateY(-20px) rotateZ(9deg) scale(0.3)
+  to
+    transform: translateX(40px) translateY(-20px) rotateZ(9deg) scale(1.2)
+    
+
+.player-info,
+.die-panel
+  border: 1px solid transparent
+
+.player-info.border-hl,
+.die-panel.border-hl
+  border: 1px solid grey

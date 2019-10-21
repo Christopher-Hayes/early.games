@@ -1,39 +1,7 @@
-
-<!-- <canvas #canvasRef></canvas> -->
-
 <div class="ur">
-  <!--
-  <header>
-    <h1 class="float-right"><b>UR</b></h1>
-    <h1 class="{{'phase' + gamePhase.toString()}}">{{ phaseStr[gamePhase] }}</h1>
-  </header>
-  -->
-  <div class="container-fluid row">
-    <main class="col">
-      <section class="bot-info col">
-        <div class="row">
-          <h1>BillBobBot</h1>
-          <span
-             *ngIf="gamePhase > 1"
-             class="badge badge-primary">{{ phaseStr[gamePhase] }}</span>
-        </div>
-        <div class="row">
-          <div class="finish col-4">
-            <img
-               *ngFor="let k of home[0]"
-               src="red_stroke.png"
-               alt="Chip icon for bot player, a stroke of red paint">
-          </div>
-          <div class="start col">
-            <div *ngFor="let c of chp[0]">
-              <img
-                 *ngIf="c.position == 0"
-                 src="red_stroke.png"
-                 alt="Chip icon for bot player, a stroke of red paint">
-            </div>
-          </div>
-        </div>
-      </section>
+  <div class="d-flex flex-row h-100">
+    <main class="d-flex flex-column justify-content-center m-5">
+    <!-- Game board -->
       <section class="board">
         <table>
           <!-- PLAYER A ROW -->
@@ -41,9 +9,9 @@
             <td
                *ngFor="let a of pathOrder[0]">
               <button
-               (click)="pos[0][a] && moveChip(pos[0][a])"
-               (mouseover)="pos[0][a] && possMoves = a"
-               (mouseout)="possMoves = 15"
+               (click)="gameMode == 1 && pos[0][a] && moveChip(pos[0][a])"
+               (mouseover)="gameMode == 1 && pos[0][a] && possMoves = a"
+               (mouseout)="gameMode == 1 && possMoves = 15"
                class="cell {{pos[0][a]?.cl}}"
                [ngClass]="{'blank': a == 0, 'double': a == 4 || a == 14}"
                [disabled]="gamePhase != 1"
@@ -56,10 +24,10 @@
                *ngFor="let m of pathOrder[1]">
               <button
                (click)="(pos[0][m] && !pos[0][m + diceSum] && moveChip(pos[0][m])) || (pos[1][m] && !pos[1][m + diceSum] && moveChip(pos[1][m]))"
-               (mouseover)="positionsB[m] && possMoves = m"
-               (mouseout)="positionsB[m] && possMoves = 15"
+               (mouseover)="pos[1][m] && possMoves = m"
+               (mouseout)="pos[1][m] && possMoves = 15"
                class="cell {{pos[0][m]?.cl}} {{pos[1][m]?.cl}} {{ (gamePhase == 1) && (possMoves + diceSum == m) ? 'highlight' : ''}}"
-               [ngClass]="{'double': m == 8 }"
+               [ngClass]="{'double': m == 8, 'ghost': gamePhase == 1 && possMoves == m }"
                [disabled]="gamePhase != 1"
                ></button>
             </td>
@@ -73,52 +41,66 @@
                (mouseover)="pos[1][b] && possMoves = b"
                (mouseout)="possMoves = 15"
                class="cell {{pos[1][b]?.cl}} {{ (gamePhase == 1) && (possMoves + diceSum == b) ? 'highlight' : ''}}"
-               [ngClass]="{'blank': b == 0, 'double': b == 4 || b == 14}"
+               [ngClass]="{'blank': b == 0, 'double': b == 4 || b == 14, 'ghost': gamePhase == 1 && possMoves == b}"
                [disabled]="gamePhase != 1"
                ></button>
             </td>
           </tr>
         </table>
       </section>
-
-      <!-- Player info -->
-      <section class="player-info col">
-        <div class="row">
-          <div class="finish col-4">
-            <img
-               *ngFor="let k of home[1]"
-               src="green_stroke.jpeg"
-               alt="Chip icon for bot player, a stroke of red paint">
-          </div>
-          <div class="start col">
-            <div *ngFor="let c of chp[1]">
-              <img
-                 *ngIf="c.position == 0"
-                 src="green_stroke.jpeg"
-                 alt="Chip icon for bot player, a stroke of red paint">
-            </div>
-            <button
-              class="new-chip btn"
-              (mouseover)="possMoves = 0"
-              (mouseout)="possMoves = 15"
-              [ngClass]="{'btn-primary': gamePhase == 1}"
-              [disabled]="gamePhase != 1 || left[1] == 0 || pos[1][diceSum]"
-              (click)="newChip(1)">Add Chip to Board</button>
-          </div>
-        </div>
-        <div class="row">
-          <h1>You</h1>
-          <span
-             *ngIf="gamePhase < 2"
-             class="badge badge-primary">{{ phaseStr[gamePhase] }}</span>
-        </div>
-      </section>
     </main>
-    <div>
-      <aside class="die-panel d-flex justify-content-center flex-column">
+
+    <div class="d-flex flex-column justify-content-between">
+      <!-- PLAYER A -->
+      <div
+        class="player-info player-a p-4"
+        [ngClass]="{'border-hl': gamePhase == 3}">
+        <div class="d-flex flex-row justify-content-between">
+          <h3>{{ gameMode == 0 ? 'Bob Bot' : 'Player 1'}}</h3>
+          <span
+             *ngIf="gamePhase > 1"
+             class="badge badge-secondary">{{ phaseStr[gamePhase] }}</span>
+        </div>
+        <div class="dropdown-divider"></div>
+        <!-- chips available -->
+        <div class="start">
+          <span class="text-muted d-block mb-1">Chips Available</span>
+          <!-- add chip to board -->
+          <button
+            *ngIf="gameMode == 1"
+            class="new-chip btn"
+            (mouseover)="possMoves = 0"
+            (mouseout)="possMoves = 15"
+            [ngClass]="{'btn-primary': gamePhase == 3}"
+            [disabled]="gamePhase != 3 || left[0] == 0 || pos[0][diceSum]"
+            (click)="newChip(0)">Add Chip to Board<span style="min-width:30px;display:inline-block"></span></button>
+          <!-- chips -->
+          <div *ngFor="let c of chp[0] | keyvalue" class="available float-left">
+            <img
+               *ngIf="c.value.position == 0"
+               src="assets/chip_white.svg"
+               alt="Player A chip icon">
+          </div>
+        </div>
+        <!-- chips done -->
+        <div class="finish my-4 d-inline-block">
+          <span class="text-muted d-block">Chips Completed</span>
+          <img
+             *ngFor="let k of home[0]"
+             src="assets/chip_white.svg"
+             alt="Player A Chip">
+        </div>
+      </div>
+
+      <!-- dice panel -->
+      <aside
+        class="die-panel d-flex justify-content-center flex-column position-relative"
+        [ngClass]="{'border-hl': gamePhase % 2 == 0}">
         <div class="info p-4">
-          <h1 class="mb-2">Dice</h1>
-          <div class="dropdown-divider mb-3"></div>
+          <div class="d-flex flex-row justify-content-between">
+            <h3 class="mb-2">Dice</h3>
+            <div *ngIf="rollAgain"class="alert alert-success py-2 px-3 mb-0" role="alert">Roll again!</div>
+          </div>
           <!-- roll button -->
           <button
             class="btn"
@@ -127,11 +109,54 @@
             [disabled]="gamePhase != 0"
                >Roll Dice</button>
           <!-- dice sum -->
-          <h1 id="diceSum" style="font-size:96px" class="float-right">{{ diceSum }}</h1>
+          <span id="diceSum" class="text-muted">{{ diceSum }}</span>
         </div>
         <!-- dice rendering -->
         <canvas id="diceCanvas" class="align-self-bottom"></canvas>
       </aside>
+      <!-- PLAYER B -->
+      <div
+        class="player-info player-b p-4"
+        [ngClass]="{'border-hl': gamePhase == 1}">
+        <!-- Player name -->
+        <div class="d-flex flex-row justify-content-between">
+          <h3>{{ gameMode == 0 ? 'You' : 'Player B'}}</h3>
+          <span
+             *ngIf="gamePhase < 2"
+             class="badge badge-secondary">{{ phaseStr[gamePhase] }}</span>
+        </div>
+        <div class="dropdown-divider"></div>
+        <!-- chips available -->
+        <div class="start">
+          <span class="text-muted d-block mb-1">Chips Available</span>
+          <!-- add chip to board -->
+          <button
+            *ngIf="gamePhase == 1 && left[1] > 0 && !pos[1][diceSum]"
+            class="new-chip btn"
+            (mouseover)="possMoves = 0"
+            (mouseout)="possMoves = 15"
+            [ngClass]="{'btn-primary': gamePhase == 1}"
+            [disabled]="gamePhase != 1 || left[1] == 0 || pos[1][diceSum]"
+            (click)="newChip(1)">Add Chip to Board<span style="min-width:30px;display:inline-block"></span></button>
+          <!-- chips -->
+          <div *ngFor="let c of chp[1] | keyvalue" class="smChip float-left">
+            <img
+               *ngIf="c.value.position == 0"
+               src="assets/chip_black.svg"
+               alt="Chip icon for bot player, a stroke of red paint">
+          </div>
+        </div>
+        <br>
+        <!-- chips done -->
+        <div class="finish my-4">
+          <span class="text-muted d-block">Chips Completed</span>
+          <img
+             *ngFor="let k of home[1]"
+             src="assets/chip_black.svg"
+             alt="Player B Chip">
+        </div>
+      </div>
     </div>
   </div>
 </div>
+

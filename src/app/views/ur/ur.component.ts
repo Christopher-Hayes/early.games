@@ -1,6 +1,8 @@
 import { Component, Input, OnInit, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+// import * as $ from 'jquery';
+import * as $AB from 'jquery';
 
 @Component({
   selector: 'app-ur',
@@ -10,21 +12,11 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 export class UrComponent implements OnInit, AfterViewInit {
   // @ViewChild('canvasRef') canvasRef: ElementRef;
 
-  pathA = [ 'pre',
-            'a1', 'a2', 'a3', 'a4',
-            'c5', 'c6', 'c7', 'c8',
-            'c9', 'c10', 'c11', 'c12',
-            'a13', 'a14',
-            'post' ];
+  // --- Players --------------------------------------------------------------
+  // Game Mode -    0=user vs bot    1=user vs user
+  gameMode = 0;
 
-  pathB = [ 'pre',
-            'b1', 'b2', 'b3', 'b4',
-            'c5', 'c6', 'c7', 'c8',
-            'c9', 'c10', 'c11', 'c12',
-            'b13', 'b14',
-            'post' ];
-  allPaths = [this.pathA, this.pathB];
-
+  // --- Game board -----------------------------------------------------------
   pathOrder = [
     [ 13, 14,  0, 0, 1, 2, 3, 4 ],
     [ 12, 11, 10, 9, 8, 7, 6, 5 ],
@@ -33,18 +25,17 @@ export class UrComponent implements OnInit, AfterViewInit {
 
   // Chip positions - numbers represent distance down path
   // Indexes: 0 = haven't started; 15 = successfully completed
-  // Values: [null: unoccupied, Chip; occupied]
-  positionsA: Chip[] = [];
-  positionsB: Chip[] = [];
-  pos = [this.positionsA, this.positionsB];
+  // Values: [ null: unoccupied, Chip: occupied ]
+  // [ Player A positions, Player B positions ]
+  pos = [[], []];
 
-  chipsA: Chip[] = [];
-  chipsB: Chip[] = [];
-  chp = [this.chipsA, this.chipsB];
+  // Player chips; key = index #; value = Chip
+  // [ Player A chips, Player B chips ]
+  chp = [new Map<string, Chip>(), new Map<string, Chip>()];
 
-  chipsALeft = 7;
-  chipsBLeft = 7;
-  left = [this.chipsALeft, this.chipsBLeft];
+  // [Player A chips left, Player B chips left];
+  left = [7, 7];
+  done = [0, 0];
 
   // How many chips have successfully traversed the board
   homeNum = [0, 0];
@@ -52,11 +43,12 @@ export class UrComponent implements OnInit, AfterViewInit {
 
   // Game phase - 0=you roll, 1=you move, 2=they roll, 2=they move
   gamePhase = 0;
-  phaseStr = ['Your Turn: Roll', 'Your Turn: Move', 'Bot: Roll', 'Bot: Move'];
+  phaseStr = ['Roll', 'Move', 'Roll', 'Move'];
 
   // Dice
   diceVal: boolean[] = [false, false, false, false];
   diceSum = 0;
+  rollAgain = false;
 
   // Show possible moves
   // This is the index of the chip being hovered
@@ -74,6 +66,7 @@ export class UrComponent implements OnInit, AfterViewInit {
   dice: THREE.Mesh[] = [];
   diceV: any = [];
 
+  rollP0 = 0;
   rollP = 0;
   rollDuration = 1000;
 
@@ -131,17 +124,18 @@ export class UrComponent implements OnInit, AfterViewInit {
     this.camera.position.set(0, 0, 50);
 
     // Lighting
-    const hemiLight = new THREE.HemisphereLight( 0xffffff, 0xffffff, 0.8 );
+    const hemiLight = new THREE.HemisphereLight( 0xffffff, 0xffffff, 0.7 );
     hemiLight.color.setHSL( 1, 1, 1 );
     hemiLight.groundColor.setHSL( 1, 1, 1 );
     hemiLight.position.set( 0, 50, 0 );
     this.scene.add(hemiLight);
 
-    const dirLight = new THREE.DirectionalLight( 0xffffff, 1 );
+    const dirLight = new THREE.DirectionalLight( 0xffffff, 0.2 );
     dirLight.color.setHSL( 1, 1, 1 );
-    dirLight.position.set( - 1, 1.75, 1 );
+    dirLight.position.set( -3, 3, 10 );
     dirLight.position.multiplyScalar( 30 );
     this.scene.add(dirLight);
+
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
       canvas: document.getElementById('diceCanvas') as HTMLCanvasElement
@@ -159,8 +153,17 @@ export class UrComponent implements OnInit, AfterViewInit {
   animate = () => {
     requestAnimationFrame(this.animate);
 
+    const now = Date.now();
+    let p = 0;
 
-    const p = 1 - Math.cos(Math.max(0, (this.rollP - Date.now()) / this.rollDuration));
+    // Dice animation
+    if (this.rollP0 > now) {
+      // Dice pre-rolling
+      p = Math.cos(Math.max(0, (this.rollP - Date.now()) / this.rollDuration));
+    } else {
+      // Dice rolling
+      p = 1 - Math.cos(Math.max(0, (this.rollP - Date.now()) / this.rollDuration));
+    }
 
     this.renderer.domElement.style.opacity = (1 - p * 2).toString();
 
@@ -170,6 +173,7 @@ export class UrComponent implements OnInit, AfterViewInit {
       this.dice[k].rotation.z = p * this.diceV[k].rz + (this.diceVal[k] ? 0 : 2.039);
       this.dice[k].position.y = p * -70 + 20;
       this.dice[k].position.z = p * 100;
+      this.scene.rotation.z = p * p * 2;
     }
 
     this.renderer.render(this.scene, this.camera);
@@ -177,22 +181,18 @@ export class UrComponent implements OnInit, AfterViewInit {
 
   constructor() {
     for (let c = 0; c < 7; c++) {
+      const cStr = c.toString();
       // Player A
-      this.chp[0].push({ player: 0,
-                         position: 0,
-                         cl: 'chipA' });
+      this.chp[0].set(cStr, Chip.init(0, cStr));
       // Player B
-      this.chp[1].push({ player: 1,
-                         position: 0,
-                         cl: 'chipB' });
+      this.chp[1].set(cStr, Chip.init(1, cStr));
     }
   }
 
   ngOnInit() {
     // Set all positions to unoccupied
     for (let k = 0; k < 16; k++) {
-      this.positionsA[k] = null;
-      this.positionsB[k] = null;
+      this.pos[0][k] = this.pos[1][k] = null;
     }
   }
 
@@ -210,7 +210,7 @@ export class UrComponent implements OnInit, AfterViewInit {
         setTimeout(() => { this.rollDice(); }, 1000);
         break;
       case 3:
-        setTimeout(() => { this.botMove(); }, 1000);
+        setTimeout(() => { this.botMove(); }, 1500);
         break;
     }
 
@@ -229,7 +229,7 @@ export class UrComponent implements OnInit, AfterViewInit {
     } else {
       // If cannot add, move chip
       console.log('BOT moved chip');
-      for (const c of this.chp[0]) {
+      for (const c of this.chp[0].values()) {
         if (this.canMoveChip(c)) {
           this.moveChip(c);
           return;
@@ -244,19 +244,36 @@ export class UrComponent implements OnInit, AfterViewInit {
   recountChipsLeft() {
     for (let pl = 0; pl < 2; pl++) {
       let sum = 0;
-      for (const c of this.chp[pl]) {
+      for (const c of this.chp[pl].values()) {
         sum += c.position === 0 ? 1 : 0;
       }
       this.left[pl] = sum;
     }
   }
+   // Update chips completed count
+  recountChipsDone() {
+    for (let pl = 0; pl < 2; pl++) {
+      let sum = 0;
+      for (const c of this.chp[pl].values()) {
+        sum += c.position === 15 ? 1 : 0;
+      }
+      this.done[pl] = sum;
+      if (sum === 7) {
+        console.log('Congrats to player', pl, 'for winning!');
+      }
+    }
+  }
 
   // Roll dice
   rollDice() {
+    // Remove roll again alert
+    this.rollAgain = false;
+
     // Animation
     document.getElementById('diceSum').classList.remove('enter');
-    setTimeout(() => { document.getElementById('diceSum').classList.add('enter'); }, 200);
-    this.rollP = Date.now() + this.rollDuration;
+    setTimeout(() => { document.getElementById('diceSum').classList.add('enter'); }, 1000);
+    this.rollP0 = Date.now() + 500;
+    this.rollP = Date.now() + this.rollDuration + 500;
 
     this.diceSum = 0;
     for (let k = 0; k < 4; k++) {
@@ -266,14 +283,14 @@ export class UrComponent implements OnInit, AfterViewInit {
     this.nextPhase();
     // If 0 rolled, skip move phase
     if (this.diceSum === 0 && this.gamePhase === 1) {
-      console.log('0 rolled, skip move phase');
-      this.nextPhase();
+      console.log('0 rolled, skip move phase (after brief delay');
+      setTimeout(() => { this.nextPhase(); }, 1500);
     }
   }
 
   // Add new chip to board
   newChip(player: number) {
-    for (const c of this.chp[player]) {
+    for (const c of this.chp[player].values()) {
       if (c.position === 0) {
         this.moveChip(c);
         return;
@@ -325,22 +342,17 @@ export class UrComponent implements OnInit, AfterViewInit {
         chip.position === 8 ||
         chip.position === 14) {
       console.log('Landed on double! Roll again');
+      this.rollAgain = true;
       this.gamePhase -= 2;
     }
   }
 
-  // Remove chip from board of player
-  rmChipAtPos(pos: number, player: number) {
-    for (let c = 0; c < 7; c++) {
-      if (this.chp[player][c] && this.chp[player][c].position === pos) {
-        // Remove from chips list
-        this.chp[player][c].position = 0;
-        // Remove from board
-        this.pos[player][pos] = null;
-        return;
-      }
-    }
-    console.log('ERROR: Could not find chip to remove.');
+  // Remove chip from board of player 'pl'
+  rmChipAtPos(pos: number, pl: number) {
+    // Reset position
+    this.chp[pl].get(this.pos[pl][pos].key).position = 0;
+    // Remove from board
+    this.pos[pl][pos] = null;
   }
 
   // Can add new chip
@@ -352,7 +364,7 @@ export class UrComponent implements OnInit, AfterViewInit {
   // Can move chip
   canMoveChip(chip: Chip) {
     const newPos = chip.position + this.diceSum;
-    return newPos < 15 &&
+    return newPos < 16 &&
            !this.pos[chip.player][newPos];
   }
 
@@ -362,4 +374,12 @@ export class Chip {
   player: number; // 0 or 1 (a or b)
   position: number; // index in pathX array
   cl: string; // css class name - convenience
+  key: string; // this.chp key
+
+  public static init(player: number, key: string): Chip {
+    return {  player,
+              position: 0,
+              cl: player === 0 ? 'chipA' : 'chipB',
+              key };
+  }
 }
