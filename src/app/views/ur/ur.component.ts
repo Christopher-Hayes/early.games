@@ -15,11 +15,12 @@ export class UrComponent implements OnInit, AfterViewInit {
   // --- Players --------------------------------------------------------------
   // Game Mode -    0=user vs bot    1=user vs user
   // [Player A, Player B]
-  isBot = [false, true];
+  isBot = [true, false];
   // Current player playing; 0 = Player A; 1 = Player B
   player = 0;
   // Game phase - 0=you roll, 1=you move, 2=they roll, 2=they move
   gamePhase = 0;
+  phaseTiming = null;
   phaseStr = ['Roll', 'Move', 'Roll', 'Move'];
 
   // --- Game board -----------------------------------------------------------
@@ -92,13 +93,12 @@ export class UrComponent implements OnInit, AfterViewInit {
           this.dice[k].position.x = k * 25 - 40;
           this.diceV[k] = {};
           this.diceV[k].rx = 0 + Math.random() * 10;
-          this.diceV[k].ry = 0 + Math.random() * 20;
-          this.diceV[k].rz = 0 + Math.random() * 30;
+          this.diceV[k].ry = 0 + Math.random() * 10;
+          this.diceV[k].rz = 0 + Math.random() * 10;
 
           this.scene.add(this.dice[k]);
         }
         this.doneLoading();
-        this.resetDice();
       },
       // called while loading is progressing
       (xhr) => {
@@ -112,12 +112,8 @@ export class UrComponent implements OnInit, AfterViewInit {
 
   }
 
-  resetDice() {
-    setTimeout(() => { this.resetDice(); }, 5000);
-  }
-
   doneLoading() {
-
+    // Canvas dimensions (dice viewport)
     const w = 300;
     const h = 140;
 
@@ -209,30 +205,32 @@ export class UrComponent implements OnInit, AfterViewInit {
     this.gamePhase = (this.gamePhase + 1) % 4;
     this.player = this.gamePhase < 2 ? 0 : 1;
 
+    this.runPhase();
+  }
+
+  runPhase() {
     if ((this.gamePhase < 2 && this.isBot[0]) ||
         (this.gamePhase > 1 && this.isBot[1])) {
+      clearTimeout(this.phaseTiming);
       switch (this.gamePhase) {
         case 0:
           // Player A rolls dice
-          setTimeout(() => { this.rollDice(); }, 1000);
+          this.phaseTiming = setTimeout(() => { this.rollDice(); }, 1000);
           break;
         case 1:
           // Player A moves
-          setTimeout(() => { this.botMove(0); }, 1500);
+          this.phaseTiming = setTimeout(() => { this.botMove(0); }, 1500);
           break;
         case 2:
           // Player B rolls dice
-          setTimeout(() => { this.rollDice(); }, 1000);
+          this.phaseTiming = setTimeout(() => { this.rollDice(); }, 1000);
           break;
         case 3:
           // Player B moves
-          setTimeout(() => { this.botMove(1); }, 1500);
+          this.phaseTiming = setTimeout(() => { this.botMove(1); }, 1500);
           break;
       }
     }
-
-    // Recount chips available
-    this.recountChipsLeft();
   }
 
   // --- Board events --------------------------------------------------
@@ -243,8 +241,8 @@ export class UrComponent implements OnInit, AfterViewInit {
       console.log('Game is in MOVE phase - validated');
       // Check if user is moving own piece
       if (!this.isBot[this.player] &&
-        Math.abs(rowIndex - this.player) < 2 &&
-        this.pos[this.player][cell]) {
+          ((rowIndex < 2 && this.player === 0) || (rowIndex > 0 && this.player === 1)) &&
+          this.pos[this.player][cell]) {
         console.log('User moving own chip - validated');
         // Check if chip can be moved
         if (!this.pos[this.player][cell + this.diceSum]) {
@@ -257,10 +255,10 @@ export class UrComponent implements OnInit, AfterViewInit {
   // Cell mouse over event
   cellOver(cell: number, rowIndex: number): void {
     console.log('Cell hovered:', cell);
-    if (this.gamePhase % 2 === 1 &&
-      !this.isBot[this.player] &&
-      Math.abs(rowIndex - this.player) < 2 &&
-      this.pos[this.player][cell]) {
+    if (this.pos[this.player][cell] &&
+        this.gamePhase % 2 === 1 &&
+        !this.isBot[this.player] &&
+        ((rowIndex < 2 && this.player === 0) || (rowIndex > 0 && this.player === 1))) {
       console.log('Can show possible move - validated');
       this.possMoves = cell;
     }
@@ -276,7 +274,7 @@ export class UrComponent implements OnInit, AfterViewInit {
     } else {
       // If cannot add, move chip
       for (const c of this.chp[player].values()) {
-        if (this.canMoveChip(c)) {
+        if (c.position !== 15 && this.canMoveChip(c)) {
           console.log('BOT moved chip', c);
           this.moveChip(c);
           return;
@@ -305,8 +303,10 @@ export class UrComponent implements OnInit, AfterViewInit {
         sum += c.position === 15 ? 1 : 0;
       }
       this.done[pl] = sum;
+      console.log('player', pl, 'done =', sum);
       if (sum === 7) {
-        console.log('Congrats to player', pl, 'for winning!');
+        alert('Congrats to ' + (this.isBot[pl] ? 'Bot' : 'Player') + (pl === 0 ? ' A' : ' B') + ' for winning!');
+        this.gamePhase = -1;
       }
     }
   }
@@ -321,6 +321,14 @@ export class UrComponent implements OnInit, AfterViewInit {
     setTimeout(() => { document.getElementById('diceSum').classList.add('enter'); }, 1000);
     this.rollP0 = Date.now() + 500;
     this.rollP = Date.now() + this.rollDuration + 500;
+    // Change roll characteristics when out of view
+    setTimeout(() => {
+      for (let k = 0; k < 4; k++) {
+        this.diceV[k].rx = 0 + Math.random() * 10;
+        this.diceV[k].ry = 0 + Math.random() * 10;
+        this.diceV[k].rz = 0 + Math.random() * 10;
+      }
+    }, 500);
 
     this.diceSum = 0;
     for (let k = 0; k < 4; k++) {
@@ -331,7 +339,9 @@ export class UrComponent implements OnInit, AfterViewInit {
     // If 0 rolled, skip move phase
     if (this.diceSum === 0) {
       console.log('0 rolled, skip move phase (after brief delay');
-      setTimeout(() => { this.nextPhase(); }, 1500);
+      if (!this.isBot[this.player]) {
+        this.phaseTiming = setTimeout(() => { this.nextPhase(); }, 1500);
+      }
     }
   }
 
@@ -365,10 +375,16 @@ export class UrComponent implements OnInit, AfterViewInit {
       this.home[chip.player].push(chip);
       this.homeNum[chip.player]++;
       this.pos[chip.player][chip.position] = null;
+      chip.position = 15;
     } else if (chip.position + this.diceSum > 15) {
       // Moves too large for chip to move off board
       console.log('Chip cannot move further');
     }
+
+    // Recount chips available
+    this.recountChipsLeft();
+    this.recountChipsDone();
+
     this.nextPhase();
   }
 
@@ -411,7 +427,8 @@ export class UrComponent implements OnInit, AfterViewInit {
   // Can move chip
   canMoveChip(chip: Chip) {
     const newPos = chip.position + this.diceSum;
-    return newPos < 16 &&
+    return this.diceSum !== 0 &&
+           newPos < 16 &&
            !this.pos[chip.player][newPos];
   }
 

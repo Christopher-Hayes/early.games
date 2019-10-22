@@ -14,8 +14,8 @@
                (click)="cellClick(cell, rowIndex)"
                (mouseover)="cellOver(cell, rowIndex)"
                (mouseout)="possMoves = 15"
-               class="cell {{ (rowIndex == 1 || (rowIndex == 0 && player == 0) || (rowIndex == 1 && player == 1)) && (possMoves + diceSum == cell) ? 'highlight ' + (player == 0 ? 'chipA' : 'chipB') : ''}} {{ rowIndex < 2 ? pos[0][cell]?.cl : '' }} {{ rowIndex > 0 ? pos[1][cell]?.cl : '' }}"
-               [ngClass]="{'blank': cell == 0, 'double': cell == 4 || cell == 8 || cell == 14, 'ghost': gamePhase % 2 == 1 && possMoves == cell}"
+               class="cell {{ (rowIndex == 1 || (rowIndex == 0 && player == 0) || (rowIndex == 2 && player == 1)) && (possMoves + diceSum == cell) ? 'highlight ' + (player == 0 ? 'chipA' : 'chipB') : ''}} {{ rowIndex < 2 ? pos[0][cell]?.cl : '' }} {{ rowIndex > 0 ? pos[1][cell]?.cl : '' }}"
+               [ngClass]="{'blank': cell == 0, 'double': cell == 4 || cell == 8 || cell == 14, 'ghost': ((player == pos[0][cell]?.player && rowIndex < 2) || (player == pos[1][cell]?.player && rowIndex > 0)) && gamePhase % 2 == 1 && possMoves == cell}"
                [disabled]="!((gamePhase == 1 && pos[0][cell]) || (gamePhase == 3 && pos[1][cell]))"
                ></button>
             </td>
@@ -28,9 +28,13 @@
       <!-- PLAYER A -->
       <div
         class="player-info player-a p-4"
-        [ngClass]="{'border-hl': gamePhase == 3}">
+        [ngClass]="{'border-hl': gamePhase == 1}">
         <div class="d-flex flex-row justify-content-between">
-          <h3>{{ !isBot[0] ? 'Bob Bot' : 'Player 1'}}</h3>
+          <!-- <h3>{{ !isBot[0] ? 'Bob Bot' : 'Player 1'}}</h3> -->
+          <mat-button-toggle-group name="playerMode" [value]="isBot[0] ? 'bot' : 'player'" (change)="isBot[0] = $event.value == 'bot';runPhase()" aria-label="Player mode: player or bot">
+          <mat-button-toggle value="player">Player A</mat-button-toggle>
+          <mat-button-toggle value="bot">Bot A</mat-button-toggle>
+        </mat-button-toggle-group>
           <span
              *ngIf="gamePhase < 2"
              class="badge badge-secondary">{{ phaseStr[gamePhase] }}</span>
@@ -95,7 +99,12 @@
         [ngClass]="{'border-hl': gamePhase == 3}">
         <!-- Player name -->
         <div class="d-flex flex-row justify-content-between">
-          <h3>{{ isBot[1] ? 'Bobby Bot' : 'You'}}</h3>
+          <!-- <h3>{{ isBot[1] ? 'Bobby Bot' : 'You'}}</h3> -->
+          <mat-button-toggle-group name="playerMode" [value]="isBot[1] ? 'bot' : 'player'" (change)="isBot[1] = $event.value == 'bot';runPhase()"aria-label="Player mode: player or bot">
+          <mat-button-toggle value="player">Player B</mat-button-toggle>
+          <mat-button-toggle value="bot">Bot B</mat-button-toggle>
+        </mat-button-toggle-group>
+
           <span
              *ngIf="gamePhase > 1"
              class="badge badge-secondary">{{ phaseStr[gamePhase] }}</span>

@@ -68,7 +68,6 @@ section.board
       background-size: 60%
       box-shadow: inset 0 0 30px #bbb
       border-color: rgba(0,0,0, 0.3)
-      // transform: scale(1.1)
 
     .cell:focus
       outline: none
@@ -112,10 +111,18 @@ section.board
       margin-left: -153px
       margin-top: -6px
       white-space: nowrap
-      animation: scroll 300ms cubic-bezier(.05,.99,.43,.99)
+      animation: hide 1500ms linear 0ms, scroll 300ms cubic-bezier(.05,.99,.43,.99) 1000ms
 
 player-info .start .available:last-child()
   float: none
+
+@keyframes hide
+  0%
+    opacity: 0
+  66%
+    opacity: 0
+  100%
+    opacity: 1
 
 @keyframes scroll
   from
@@ -161,21 +168,34 @@ player-info .start .available:last-child()
     transition: opacity 500ms ease-out
 
   .alert-success
-    transform: translateX(40px) translateY(-20px) rotateZ(9deg) scale(1.2)
-    backdrop-filter: blur(3px)
-    background-color: #d8f7d869
-    animation: popin 300ms cubic-bezier(.05,1.55,.83,1.01)
+    transform: translateX(40px) translateY(-40px) // rotateZ(9deg) scale(1.2)
+    // backdrop-filter: blur(3px)
+    // background-color: #d8f7d869
+    animation: popin 500ms cubic-bezier(.05,1.2,.83,1.01)
+    background-color: #e34275
+    box-shadow: -2px 4px 0 #00000026
+    border-radius: 0
+    color: #ffffff
+    border: none
 
 @keyframes popin
   from
-    transform: translateX(40px) translateY(-20px) rotateZ(9deg) scale(0.3)
+    transform: translateX(40px) translateY(40px)
+    opacity: 0
   to
-    transform: translateX(40px) translateY(-20px) rotateZ(9deg) scale(1.2)
+    transform: translateX(40px) translateY(-40px)
+    opacity: 1
     
 
 .player-info
   border: 1px solid transparent
 
+.player-info,
+.die-panel
+  box-shadow: 0 0 0px #f343793d
+  transition: box-shadow 400ms cubic-bezier(.05,1.55,.83,1.01)
+
 .player-info.border-hl,
 .die-panel.border-hl
-  border: 1px solid grey
+  border: 1px solid #f34379
+  box-shadow: 0 0 20px #f343793d
