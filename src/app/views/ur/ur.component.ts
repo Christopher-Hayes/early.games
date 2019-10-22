@@ -14,7 +14,13 @@ export class UrComponent implements OnInit, AfterViewInit {
 
   // --- Players --------------------------------------------------------------
   // Game Mode -    0=user vs bot    1=user vs user
-  gameMode = 0;
+  // [Player A, Player B]
+  isBot = [false, true];
+  // Current player playing; 0 = Player A; 1 = Player B
+  player = 0;
+  // Game phase - 0=you roll, 1=you move, 2=they roll, 2=they move
+  gamePhase = 0;
+  phaseStr = ['Roll', 'Move', 'Roll', 'Move'];
 
   // --- Game board -----------------------------------------------------------
   pathOrder = [
@@ -40,10 +46,6 @@ export class UrComponent implements OnInit, AfterViewInit {
   // How many chips have successfully traversed the board
   homeNum = [0, 0];
   home = [[], []];
-
-  // Game phase - 0=you roll, 1=you move, 2=they roll, 2=they move
-  gamePhase = 0;
-  phaseStr = ['Roll', 'Move', 'Roll', 'Move'];
 
   // Dice
   diceVal: boolean[] = [false, false, false, false];
@@ -198,39 +200,84 @@ export class UrComponent implements OnInit, AfterViewInit {
 
   ngAfterViewInit() {
     this.init();
+    this.gamePhase = -1;
+    this.nextPhase();
   }
 
   // Increment game phase
   nextPhase() {
     this.gamePhase = (this.gamePhase + 1) % 4;
+    this.player = this.gamePhase < 2 ? 0 : 1;
 
-    switch (this.gamePhase) {
-      case 2:
-        // Player A rolls dice
-        setTimeout(() => { this.rollDice(); }, 1000);
-        break;
-      case 3:
-        setTimeout(() => { this.botMove(); }, 1500);
-        break;
+    if ((this.gamePhase < 2 && this.isBot[0]) ||
+        (this.gamePhase > 1 && this.isBot[1])) {
+      switch (this.gamePhase) {
+        case 0:
+          // Player A rolls dice
+          setTimeout(() => { this.rollDice(); }, 1000);
+          break;
+        case 1:
+          // Player A moves
+          setTimeout(() => { this.botMove(0); }, 1500);
+          break;
+        case 2:
+          // Player B rolls dice
+          setTimeout(() => { this.rollDice(); }, 1000);
+          break;
+        case 3:
+          // Player B moves
+          setTimeout(() => { this.botMove(1); }, 1500);
+          break;
+      }
     }
 
     // Recount chips available
     this.recountChipsLeft();
   }
 
+  // --- Board events --------------------------------------------------
+  // Cell click over event
+  cellClick(cell: number, rowIndex: number): void {
+    console.log('User attempting to move piece at cell', cell);
+    if (this.gamePhase % 2 === 1) {
+      console.log('Game is in MOVE phase - validated');
+      // Check if user is moving own piece
+      if (!this.isBot[this.player] &&
+        Math.abs(rowIndex - this.player) < 2 &&
+        this.pos[this.player][cell]) {
+        console.log('User moving own chip - validated');
+        // Check if chip can be moved
+        if (!this.pos[this.player][cell + this.diceSum]) {
+          console.log('Chip can be moved - validated');
+          this.moveChip(this.pos[this.player][cell]);
+        }
+      }
+    }
+  }
+  // Cell mouse over event
+  cellOver(cell: number, rowIndex: number): void {
+    console.log('Cell hovered:', cell);
+    if (this.gamePhase % 2 === 1 &&
+      !this.isBot[this.player] &&
+      Math.abs(rowIndex - this.player) < 2 &&
+      this.pos[this.player][cell]) {
+      console.log('Can show possible move - validated');
+      this.possMoves = cell;
+    }
+  }
 
   // Bot - move
-  botMove() {
-    // Player A moves chip
-    if (this.canAddChip(0)) {
+  botMove(player: number) {
+    // Bot moves chip
+    if (this.canAddChip(player)) {
       // Add chip
       console.log('BOT added chip');
-      this.newChip(0);
+      this.newChip(player);
     } else {
       // If cannot add, move chip
-      console.log('BOT moved chip');
-      for (const c of this.chp[0].values()) {
+      for (const c of this.chp[player].values()) {
         if (this.canMoveChip(c)) {
+          console.log('BOT moved chip', c);
           this.moveChip(c);
           return;
         }
@@ -282,7 +329,7 @@ export class UrComponent implements OnInit, AfterViewInit {
     }
     this.nextPhase();
     // If 0 rolled, skip move phase
-    if (this.diceSum === 0 && this.gamePhase === 1) {
+    if (this.diceSum === 0) {
       console.log('0 rolled, skip move phase (after brief delay');
       setTimeout(() => { this.nextPhase(); }, 1500);
     }
