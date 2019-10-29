@@ -36,7 +36,7 @@ section.board
       width: 7vw
       height: 7vw
       margin: 0.5rem
-      border: 2px solid rgba(0,0,0, 0.12)
+      border: 2px solid rgba(0,0,0, 0.2)
       border-radius: 50%
       cursor: default
       background-color: white
@@ -78,10 +78,39 @@ section.board
       background-size: 40%
 
 .right-sidebar
-  border-left: 1px solid #ccc
+  // border-left: 1px solid #ccc
+
+  &::before
+    position: absolute
+    z-index: 0
+    content: ''
+    width: 1px
+    height: 0
+    right: 150px
+    background-color: #f34379
+    box-shadow: 0 0 20px 3px #f343793d
+    transition: height 500ms ease-out
+
+  &.p0::before
+    height: calc(50vh - 2rem)
+    top: 2rem
+
+  &.p1::before
+    height: 0
+    top: 2rem
+
+  &.p2::before
+    height: calc(50vh - 2rem)
+    bottom: 2rem
+
+  &.p3::before
+    height: 0
+    bottom: 2rem
+
 
 // Player info
 .player-info
+  position: relative
   padding: 0
   border: 1px solid #ddd
   width: 300px
@@ -91,6 +120,9 @@ section.board
 
   .badge
     height: 18px
+    margin-right: -2.7rem
+    margin-top: 0.8rem
+    background-color: #f34379
 
   .start, .finish
     

@@ -9,18 +9,30 @@ import { UrComponent } from './views/ur/ur.component';
 // Angular Material
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatDialogModule } from '@angular/material/dialog';
+import { DialogComponent } from './views/ur/components/dialog/dialog.component';
+import { SnacktimeComponent } from './views/ur/ur.component';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 
 @NgModule({
+  entryComponents: [
+    DialogComponent,
+    SnacktimeComponent
+  ],
   declarations: [
     AppComponent,
-    UrComponent
+    UrComponent,
+    DialogComponent,
+    SnacktimeComponent
   ],
   imports: [
     BrowserModule,
     AppRoutingModule,
     FormsModule,
     BrowserAnimationsModule,
-    MatButtonToggleModule
+    MatButtonToggleModule,
+    MatDialogModule,
+    MatSnackBarModule
   ],
   providers: [],
   bootstrap: [AppComponent]

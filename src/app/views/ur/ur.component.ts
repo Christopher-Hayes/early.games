@@ -1,8 +1,14 @@
-import { Component, Input, OnInit, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, Input, OnInit, AfterViewInit, ViewChild, ElementRef, Inject } from '@angular/core';
+// Angular Material
+import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatSnackBar, MAT_SNACK_BAR_DATA } from '@angular/material/snack-bar';
+// THREE.js (dice rendering)
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-// import * as $ from 'jquery';
-import * as $AB from 'jquery';
+// Components
+import { DialogComponent } from './components/dialog/dialog.component';
+
+// import * as $AB from 'jquery';
 
 @Component({
   selector: 'app-ur',
@@ -177,7 +183,8 @@ export class UrComponent implements OnInit, AfterViewInit {
     this.renderer.render(this.scene, this.camera);
   }
 
-  constructor() {
+  constructor(public dialog: MatDialog,
+              private snackBar: MatSnackBar) {
     for (let c = 0; c < 7; c++) {
       const cStr = c.toString();
       // Player A
@@ -195,9 +202,22 @@ export class UrComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit() {
+    // init THREE.js
     this.init();
-    this.gamePhase = -1;
-    this.nextPhase();
+
+    // init modal
+    const dialogRef = this.dialog.open(DialogComponent, {
+      width: '500px',
+      data: {title: 'Hey there!', text: 'Thanks for checking out early.games\nThe game, Ur, is still a work in progress. It works for the most part, but you may run into bugs.\n\nThanks\n- Chris'}
+    });
+    dialogRef.afterClosed().subscribe(result => {
+      console.log('The dialog was closed');
+      this.startGame();
+    });
+  }
+
+  startGame() {
+    this.runPhase();
   }
 
   // Increment game phase
@@ -244,12 +264,18 @@ export class UrComponent implements OnInit, AfterViewInit {
           ((rowIndex < 2 && this.player === 0) || (rowIndex > 0 && this.player === 1)) &&
           this.pos[this.player][cell]) {
         console.log('User moving own chip - validated');
-        // Check if chip can be moved
-        if (!this.pos[this.player][cell + this.diceSum]) {
-          console.log('Chip can be moved - validated');
-          this.moveChip(this.pos[this.player][cell]);
-        }
-      }
+        // Check player is not moving on top of own chip
+        const newPos = cell + this.diceSum;
+        if (!this.pos[this.player][newPos]) {
+          console.log('User not attacking self.. - validated');
+          // Check player is not attacking chip that is on safe space
+          if (!(newPos === 8 && this.pos[(this.player + 1) % 2][newPos])) {
+            if (newPos < 16) {
+              this.moveChip(this.pos[this.player][cell]);
+            } else { this.openSnackBar('Cannot move more than 1 space off the end of the board'); }
+          } else { this.openSnackBar('Cannot attack chip on safe space'); }
+        } else { this.openSnackBar('You already have a chip there'); }
+      } else { this.openSnackBar('You cannot move the other player\'s chips'); }
     }
   }
   // Cell mouse over event
@@ -429,9 +455,17 @@ export class UrComponent implements OnInit, AfterViewInit {
     const newPos = chip.position + this.diceSum;
     return this.diceSum !== 0 &&
            newPos < 16 &&
+           !(newPos === 8 && this.pos[(chip.player + 1) % 2][newPos]) &&
            !this.pos[chip.player][newPos];
   }
 
+  // Snack bar showing text
+  openSnackBar(text: string) {
+    this.snackBar.openFromComponent(SnacktimeComponent, {
+      duration: 3000,
+      data: { text }
+    });
+  }
 }
 
 export class Chip {
@@ -446,4 +480,17 @@ export class Chip {
               cl: player === 0 ? 'chipA' : 'chipB',
               key };
   }
+}
+
+@Component({
+  selector: 'app-snacktime',
+  template: '<span>{{ data.text }}</span>',
+  styles: [`
+    span {
+      color: hotpink;
+    }
+  `],
+})
+export class SnacktimeComponent {
+  constructor (@Inject(MAT_SNACK_BAR_DATA) public data) { }
 }

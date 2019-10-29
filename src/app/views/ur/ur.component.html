@@ -24,11 +24,12 @@
       </section>
     </main>
 
-    <div class="right-sidebar d-flex flex-column justify-content-between pl-5">
+    <div
+               class="right-sidebar d-flex flex-column justify-content-between pl-5 {{ 'p' + gamePhase.toString() }}">
       <!-- PLAYER A -->
       <div
         class="player-info player-a p-4"
-        [ngClass]="{'border-hl': gamePhase == 1}">
+        [ngClass]="{'border-hl': gamePhase < 2}">
         <div class="d-flex flex-row justify-content-between">
           <!-- <h3>{{ !isBot[0] ? 'Bob Bot' : 'Player 1'}}</h3> -->
           <mat-button-toggle-group name="playerMode" [value]="isBot[0] ? 'bot' : 'player'" (change)="isBot[0] = $event.value == 'bot';runPhase()" aria-label="Player mode: player or bot">
@@ -96,7 +97,7 @@
       <!-- PLAYER B -->
       <div
         class="player-info player-b p-4"
-        [ngClass]="{'border-hl': gamePhase == 3}">
+        [ngClass]="{'border-hl': gamePhase > 1}">
         <!-- Player name -->
         <div class="d-flex flex-row justify-content-between">
           <!-- <h3>{{ isBot[1] ? 'Bobby Bot' : 'You'}}</h3> -->
