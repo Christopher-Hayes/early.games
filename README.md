@@ -1,27 +1,17 @@
-# EarlyGames
+# [early.games](https://early.games)
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 7.0.3.
+This website currently The Game of Ur. This is an ancient game from early human civilization. In the future this website will feature additional very old games made freely accessible online with no ads.
 
-## Development server
+## Tech (Game of Ur)
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.
+The [3D 4-sided dice model](https://www.tinkercad.com/things/jPyYxV4fJEu) were built using [TinkerCAD](https://exercism.io/profiles/Christopher-Hayes)
 
-## Code scaffolding
+These dice were rendered with [THREE.JS](). I initially was planning to use Babylon.JS as an easy to set up rendering engine; however, I ran into [trouble adapting the code to Angular](https://stackoverflow.com/questions/58472701/babylonjs-canvas-is-blank-in-angular-6). Thank you to [@raanan-w](https://stackoverflow.com/users/729146/raanan-w) for figuring the issue out. I quickly switched to THREE.JS because it was early in the project, but I'll come back to Babylon.JS in another project.
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+The web app runs on Angular 6. Styling is done with Bootstrap 4 and Angular Material. Bootstrap is used for all of the premade utility classes, Angular Material is used for the permade Angular-centric components. Specifically, the dialog and the snackbar are from Angular Material.
 
-## Build
+The bot is not at all smart. That still needs to be done at this point (10/30/19). The first step is to develop an algorithm to give a value to each cell. At some point, I may mess with ML to see how good I can make the bots.
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory. Use the `--prod` flag for a production build.
+## Hosting
 
-## Running unit tests
-
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
-
-## Running end-to-end tests
-
-Run `ng e2e` to execute the end-to-end tests via [Protractor](http://www.protractortest.org/).
-
-## Further help
-
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI README](https://github.com/angular/angular-cli/blob/master/README.md).
+The early.games website is hosted with surge.sh at no cost. This project was partly to experiment with surge. Surge is extremely convenient for making any project publically available with a domain. However, when it comes to domain + SSL fine tuning and additional capabilities, I definitely still prefer Netlify.
