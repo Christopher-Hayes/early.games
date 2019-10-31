@@ -14,4 +14,4 @@ The bot is not at all smart. That still needs to be done at this point (10/30/19
 
 ## Hosting
 
-The early.games website is hosted with surge.sh at no cost. This project was partly to experiment with surge. Surge is extremely convenient for making any project publically available with a domain. However, when it comes to domain + SSL fine tuning and additional capabilities, I definitely still prefer Netlify.
+The [early.games website](https://early.games) is hosted with [surge.sh](https://surge.sh) at no cost. This project was partly to experiment with surge. Surge is extremely convenient for making any project publically available with a domain. However, when it comes to domain + SSL fine tuning and additional capabilities, I definitely still prefer [Netlify](https://netlify.com).
